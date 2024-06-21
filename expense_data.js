@@ -1,5 +1,4 @@
 const { Client } = require('pg');
-const format = require("pg-format");
 
 function logAndExit(err) {
   console.log(err);
@@ -25,18 +24,27 @@ class ExpenseData {
     });
   }
 
-  async calculateTotal() {
-    const totalData = await this.client.query(`SELECT SUM(amount) FROM expenses`);
+  async calculateExpensesTotal(queryCondition, parameterizedValues) {
+    const totalConfig = {
+      text: `SELECT SUM(amount) FROM expenses ${queryCondition}`,
+      values: parameterizedValues
+    }
+
+    const totalData = await this.client.query(totalConfig);
     const total = totalData.rows[0].sum;
 
     return total;
   }
 
-  async displayTotal() {
-    // const totalData = await this.client.query(`SELECT SUM(amount) FROM expenses`);
-    const total = await this.calculateTotal();
+  async displayExpensesTotal(queryCondition = '', parameterizedValues = []) {
+    const total = await this.calculateExpensesTotal(queryCondition, parameterizedValues);
 
-    const longestMemoData = await this.client.query(`SELECT MAX(length(memo)) FROM expenses`);
+    const longestMemoConfig = {
+      text: `SELECT MAX(length(memo)) FROM expenses ${queryCondition}`,
+      values: parameterizedValues
+    }
+
+    const longestMemoData = await this.client.query(longestMemoConfig);
     const longestMemoLength = longestMemoData.rows[0].max;
 
     const seperatorText = '-'.repeat(39 + longestMemoLength);
@@ -59,7 +67,7 @@ class ExpenseData {
     } else {
       this.displayExpenses(data);
       if (data.rowCount > 1) {
-        await this.displayTotal();
+        await this.displayExpensesTotal();
       }
     }
   
@@ -84,8 +92,8 @@ class ExpenseData {
     await this.client.connect();
 
     const searchConfig = {
-      text: `SELECT $1 FROM expenses WHERE memo ILIKE $2`,
-      values: ['*', `%${memo}%`]
+      text: `SELECT * FROM expenses WHERE memo ILIKE $1`,
+      values: [`%${memo}%`]
     }
 
     const data = await this.client.query(searchConfig);
@@ -99,7 +107,7 @@ class ExpenseData {
       } else {
         console.log(`There are ${data.rowCount} expenses.`);
         this.displayExpenses(data);
-        // this.displayTotal();
+        await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`]);
       }
       
       
@@ -159,7 +167,7 @@ class ExpenseData {
 
 
 let obj = new ExpenseData();
-obj.displayTotal();
+obj.displayExpensesTotal();
 
 
 
