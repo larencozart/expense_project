@@ -1,5 +1,6 @@
 const PROCESS = require('process');
 const { ExpenseData } = require('./expense_data');
+const rls = require("readline-sync");
 
 
 class CLI {
@@ -53,12 +54,18 @@ Or if you'd like to list all expenses use the command "list".`);
       }
 
       
+    } else if (command === 'clear') {
+      const response = rls.question('This will remove all expenses. Are you sure? (enter y to confirm): ');
+      if (response.toLowerCase() === 'y') {
+        this.application.clearExpenses();
+      } else {
+        console.log("Expenses were not cleared.");
+      }
     } else {
       this.displayHelp();
     }
   }
 }
-
 
 
 module.exports = { CLI };

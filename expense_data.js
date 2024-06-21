@@ -24,6 +24,36 @@ class ExpenseData {
     });
   }
 
+  async displayTotal() {
+    const totalData = await this.client.query(`SELECT SUM(amount) FROM expenses`);
+    const total = totalData.rows[0].sum;
+
+    const longestMemoData = await this.client.query(`SELECT MAX(length(memo)) FROM expenses`);
+    const longestMemoLength = longestMemoData.rows[0].max;
+
+    const seperatorText = '-'.repeat(39 + longestMemoLength);
+    const totalText =  'Total'.padEnd(23) + `${total}`.padStart(12);
+
+    console.log(seperatorText, '\n', totalText);
+   }
+
+  async listExpenses() {
+    await this.client.connect();
+  
+    const data = await this.client.query("SELECT * FROM expenses");
+   
+    if (data.rowCount < 1) {
+      console.log("There are no expenses.");
+    } else {
+      this.displayExpenses(data);
+      if (data.rowCount > 1) {
+        await this.displayTotal();
+      }
+    }
+  
+    await this.client.end();
+  }
+
   async addExpense(amount, memo) {
     await this.client.connect();
 
@@ -38,16 +68,6 @@ class ExpenseData {
     await this.client.end();
   }
 
-  async listExpenses() {
-    await this.client.connect();
-  
-    const data = await this.client.query("SELECT * FROM expenses");
-   
-    this.displayExpenses(data);
-    
-    await this.client.end();
-  }
-
   async searchExpenses(memo) {
     await this.client.connect();
 
@@ -57,8 +77,21 @@ class ExpenseData {
     }
 
     const data = await this.client.query(searchConfig);
-  
-    this.displayExpenses(data);
+
+    if (data.rowCount < 1) {
+      console.log("There are no expenses.");
+    } else {
+      if (data.rowCount === 1) {
+        console.log(`There is 1 expense.`)
+        this.displayExpenses(data);
+      } else {
+        console.log(`There are ${data.rowCount} expenses.`);
+        this.displayExpenses(data);
+        // this.displayTotal();
+      }
+      
+      
+    }
 
     await this.client.end();
   }
@@ -100,14 +133,22 @@ class ExpenseData {
 
     await this.client.end();
   }
+
+  async clearExpenses() {
+    await this.client.connect();
+
+    await this.client.query(`DELETE FROM expenses`);
+    console.log("All expenses have been deleted.");
+
+    await this.client.end();
+  }
 }
 
 
 
-/*
-$ ./expense search coffee
-  2 | Thu Oct 24 2019 |         3.29 | Coffee
-  4 | Fri Oct 25 2019 |         3.59 | More Coffee
-*/
+let obj = new ExpenseData();
+obj.displayTotal();
+
+
 
 module.exports = { ExpenseData };
