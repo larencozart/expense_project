@@ -10,6 +10,16 @@ class ExpenseData {
     this.client = new Client({ database: 'expenses'});
   }
 
+  displayExpensesCount(resultObjData, rowAmount) {
+    if (rowAmount < 1) {
+      console.log("There are no expenses.")
+    } else if (rowAmount === 1) {
+      console.log(`There is 1 expense.`);
+    } else {
+      console.log(`There are ${rowAmount} expenses.`);
+    }
+  }
+
   displayExpenses(resultObjData) {
     resultObjData.rows.forEach(row => {
   
@@ -59,18 +69,15 @@ class ExpenseData {
     const listConfig = {
       text: `SELECT * FROM expenses`
     }
-
     const data = await this.client.query(listConfig);
+    const rowAmount = data.rowCount;
 
-    if (data.rowCount < 1) {
-      console.log("There are no expenses.");
-    } else {
-      this.displayExpenses(data);
-      if (data.rowCount > 1) {
-        await this.displayExpensesTotal();
-      }
+    this.displayExpensesCount(data, rowAmount);
+    this.displayExpenses(data);
+    if (rowAmount > 1) {
+      await this.displayExpensesTotal();
     }
-  
+
     await this.client.end();
   }
 
@@ -95,22 +102,13 @@ class ExpenseData {
       text: `SELECT * FROM expenses WHERE memo ILIKE $1`,
       values: [`%${memo}%`]
     }
-
     const data = await this.client.query(searchConfig);
+    const rowAmount = data.rowCount;
 
-    if (data.rowCount < 1) {
-      console.log("There are no expenses.");
-    } else {
-      if (data.rowCount === 1) {
-        console.log(`There is 1 expense.`)
-        this.displayExpenses(data);
-      } else {
-        console.log(`There are ${data.rowCount} expenses.`);
-        this.displayExpenses(data);
-        await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`]);
-      }
-      
-      
+    this.displayExpensesCount(data, rowAmount);
+    this.displayExpenses(data);
+    if (rowAmount > 1) {
+      await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`]);
     }
 
     await this.client.end();
