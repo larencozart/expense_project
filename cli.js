@@ -1,7 +1,11 @@
-const PROCESS = require('process');
 const { ExpenseData } = require('./expense_data');
 const rls = require("readline-sync");
 
+function logAndExit(err) {
+  console.log('PROMISE REJECTED:');
+  console.log(err);
+  process.exit(1);
+};
 
 class CLI {
   constructor() {
@@ -25,25 +29,25 @@ class CLI {
   }
 
   async run(args) {
-    await this.application.client.connect();
-    await this.application.setup_schema();
+    await this.application.client.connect().catch(err => logAndExit(err));
+    await this.application.setup_schema().catch(err => logAndExit(err));
 
     let command = args[2];
 
     if (command === 'list') {
-      await this.application.listExpenses();
+      await this.application.listExpenses().catch(err => logAndExit(err));
     } else if (command === 'add') {
       const amount = args[3];
       const memo = args[4];
       if (amount && memo) {
-        await this.application.addExpense(amount, memo);
+        await this.application.addExpense(amount, memo).catch(err => logAndExit(err));
       } else {
         console.log('You must provide an amount and memo.')
       }
     } else if (command === 'search') {
       let memo = args[3];
       if (memo) {
-        await this.application.searchExpenses(memo);
+        await this.application.searchExpenses(memo).catch(err => logAndExit(err));
       } else {
         console.log(`You must provide a memo to search expenses.
 Or if you'd like to list all expenses use the command "list".`);
@@ -53,14 +57,14 @@ Or if you'd like to list all expenses use the command "list".`);
       if (Number.isNaN(Number(id))) {
         console.log('You must provide a numerical id for the expense you want to delete.');
       } else {
-        await this.application.deleteExpense(id);
+        await this.application.deleteExpense(id).catch(err => logAndExit(err));
       }
 
       
     } else if (command === 'clear') {
       const response = rls.question('This will remove all expenses. Are you sure? (enter y to confirm): ');
       if (response.toLowerCase() === 'y') {
-        await this.application.clearExpenses();
+        await this.application.clearExpenses().catch(err => logAndExit(err));
       } else {
         console.log("Expenses were not cleared.");
       }
@@ -68,7 +72,7 @@ Or if you'd like to list all expenses use the command "list".`);
       this.displayHelp();
     }
 
-    await this.application.client.end();
+    await this.application.client.end().catch(err => logAndExit(err));
   }
 }
 

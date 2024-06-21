@@ -1,6 +1,7 @@
 const { Client } = require('pg');
 
 function logAndExit(err) {
+  console.log('PROMISE REJECTED:');
   console.log(err);
   process.exit(1);
 };
@@ -11,7 +12,9 @@ class ExpenseData {
   }
 
   async setup_schema() {
-    const expenseTableResult = await this.client.query(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'expenses'`);
+    const expenseTableResult = await this.client
+      .query(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'expenses'`)
+      .catch(err => logAndExit(err));
     const expenseTableRowCount = expenseTableResult.rows[0].count;
 
     if (expenseTableRowCount === 0) {
@@ -24,7 +27,7 @@ class ExpenseData {
       )`
       }
 
-      await this.client.query(createSchemaConfig);
+      await this.client.query(createSchemaConfig).catch(err => logAndExit(err));
     }
   }
 
@@ -58,14 +61,15 @@ class ExpenseData {
       values: parameterizedValues
     }
 
-    const totalData = await this.client.query(totalConfig);
+    const totalData = await this.client.query(totalConfig).catch(err => logAndExit(err));
     const total = totalData.rows[0].sum;
 
     return total;
   }
 
   async displayExpensesTotal(queryCondition = '', parameterizedValues = []) {
-    const total = await this.calculateExpensesTotal(queryCondition, parameterizedValues);
+    const total = await this.calculateExpensesTotal(queryCondition, parameterizedValues)
+                            .catch(err => logAndExit(err));
 
     const longestMemoConfig = {
       text: `SELECT MAX(length(memo)) FROM expenses ${queryCondition}`,
@@ -82,21 +86,17 @@ class ExpenseData {
    }
 
   async listExpenses() {
-    // await this.client.connect();
-
     const listConfig = {
       text: `SELECT * FROM expenses`
     }
-    const data = await this.client.query(listConfig);
+    const data = await this.client.query(listConfig).catch(err => logAndExit(err));
     const rowAmount = data.rowCount;
 
     this.displayExpensesCount(data, rowAmount);
     this.displayExpenses(data);
     if (rowAmount > 1) {
-      await this.displayExpensesTotal();
+      await this.displayExpensesTotal().catch(err => logAndExit(err));
     }
-
-    // await this.client.end();
   }
 
   async addExpense(amount, memo) {
@@ -106,7 +106,7 @@ class ExpenseData {
       values: [amount, memo]
     }
 
-    await this.client.query(addConfig);
+    await this.client.query(addConfig).catch(err => logAndExit(err));
   }
 
   async searchExpenses(memo) {
@@ -114,13 +114,14 @@ class ExpenseData {
       text: `SELECT * FROM expenses WHERE memo ILIKE $1`,
       values: [`%${memo}%`]
     }
-    const data = await this.client.query(searchConfig);
+    const data = await this.client.query(searchConfig).catch(err => logAndExit(err));
     const rowAmount = data.rowCount;
 
     this.displayExpensesCount(data, rowAmount);
     this.displayExpenses(data);
     if (rowAmount > 1) {
-      await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`]);
+      await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`])
+                .catch(err => logAndExit(err));
     }
   }
 
@@ -131,17 +132,13 @@ class ExpenseData {
       values: [id]
     }
 
-    const expense = await this.client.query(expenseConfig)
-      .catch(err => {
-        console.log(err);
-        process.exit(1);
-      });
+    const expense = await this.client.query(expenseConfig).catch(err => logAndExit(err))
 
     return expense;
   }
 
   async deleteExpense(id) {
-    const expense = await this.fetchExpense(id);
+    const expense = await this.fetchExpense(id).catch(err => logAndExit(err));
 
     if (expense.rowCount === 1) {
       const deleteConfig = {
@@ -149,7 +146,7 @@ class ExpenseData {
         values: [id]
       }
 
-      await this.client.query(deleteConfig);
+      await this.client.query(deleteConfig).catch(err => logAndExit(err));
       console.log('The following expense has been deleted');
       this.displayExpenses(expense);
 
@@ -159,7 +156,7 @@ class ExpenseData {
   }
 
   async clearExpenses() {
-    await this.client.query(`DELETE FROM expenses`);
+    await this.client.query(`DELETE FROM expenses`).catch(err => logAndExit(err));
     console.log("All expenses have been deleted.");
   }
 }
