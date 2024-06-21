@@ -5,3 +5,7 @@ CREATE TABLE expenses (
     memo text NOT NULL,
     created_on date NOT NULL
 );
+
+
+INSERT INTO expenses (amount, memo, created_on)
+            VALUES (3.45, "More Coffee", Now());

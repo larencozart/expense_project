@@ -36,13 +36,23 @@ class CLI {
       } else {
         console.log('You must provide an amount and memo.')
       }
-    } else if (command = 'search') {
+    } else if (command === 'search') {
       let memo = args[3];
       if (memo) {
         this.application.searchExpenses(memo);
       } else {
-        console.log('You must provide a memo to search expenses');
+        console.log(`You must provide a memo to search expenses.
+Or if you'd like to list all expenses use the command "list".`);
       }
+    } else if (command === 'delete') {
+      const id = args[3];
+      if (Number.isNaN(Number(id))) {
+        console.log('You must provide a numerical id for the expense you want to delete.');
+      } else {
+        this.application.deleteExpense(id);
+      }
+
+      
     } else {
       this.displayHelp();
     }
