@@ -24,23 +24,26 @@ class CLI {
     console.log(CLI.HELP());
   }
 
-  run(args) {
+  async run(args) {
+    await this.application.client.connect();
+    await this.application.setup_schema();
+
     let command = args[2];
 
     if (command === 'list') {
-      this.application.listExpenses();
+      await this.application.listExpenses();
     } else if (command === 'add') {
       const amount = args[3];
       const memo = args[4];
       if (amount && memo) {
-        this.application.addExpense(amount, memo);
+        await this.application.addExpense(amount, memo);
       } else {
         console.log('You must provide an amount and memo.')
       }
     } else if (command === 'search') {
       let memo = args[3];
       if (memo) {
-        this.application.searchExpenses(memo);
+        await this.application.searchExpenses(memo);
       } else {
         console.log(`You must provide a memo to search expenses.
 Or if you'd like to list all expenses use the command "list".`);
@@ -50,20 +53,22 @@ Or if you'd like to list all expenses use the command "list".`);
       if (Number.isNaN(Number(id))) {
         console.log('You must provide a numerical id for the expense you want to delete.');
       } else {
-        this.application.deleteExpense(id);
+        await this.application.deleteExpense(id);
       }
 
       
     } else if (command === 'clear') {
       const response = rls.question('This will remove all expenses. Are you sure? (enter y to confirm): ');
       if (response.toLowerCase() === 'y') {
-        this.application.clearExpenses();
+        await this.application.clearExpenses();
       } else {
         console.log("Expenses were not cleared.");
       }
     } else {
       this.displayHelp();
     }
+
+    await this.application.client.end();
   }
 }
 

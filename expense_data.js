@@ -10,6 +10,24 @@ class ExpenseData {
     this.client = new Client({ database: 'expenses'});
   }
 
+  async setup_schema() {
+    const expenseTableResult = await this.client.query(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'expenses'`);
+    const expenseTableRowCount = expenseTableResult.rows[0].count;
+
+    if (expenseTableRowCount === 0) {
+      const createSchemaConfig = {
+        text: `CREATE TABLE expenses (
+          id serial PRIMARY KEY,
+          amount numeric(10,2) NOT NULL CHECK (amount >= 0.00),
+          memo text NOT NULL,
+          created_on date NOT NULL
+      )`
+      }
+
+      await this.client.query(createSchemaConfig);
+    }
+  }
+
   displayExpensesCount(resultObjData, rowAmount) {
     if (rowAmount < 1) {
       console.log("There are no expenses.")
@@ -64,8 +82,8 @@ class ExpenseData {
    }
 
   async listExpenses() {
-    await this.client.connect();
-  
+    // await this.client.connect();
+
     const listConfig = {
       text: `SELECT * FROM expenses`
     }
@@ -78,12 +96,10 @@ class ExpenseData {
       await this.displayExpensesTotal();
     }
 
-    await this.client.end();
+    // await this.client.end();
   }
 
   async addExpense(amount, memo) {
-    await this.client.connect();
-
     const addConfig = {
       text: `INSERT INTO expenses (amount, memo, created_on)
       VALUES ($1, $2, NOW())`,
@@ -91,13 +107,9 @@ class ExpenseData {
     }
 
     await this.client.query(addConfig);
-
-    await this.client.end();
   }
 
   async searchExpenses(memo) {
-    await this.client.connect();
-
     const searchConfig = {
       text: `SELECT * FROM expenses WHERE memo ILIKE $1`,
       values: [`%${memo}%`]
@@ -110,8 +122,6 @@ class ExpenseData {
     if (rowAmount > 1) {
       await this.displayExpensesTotal(`WHERE memo ILIKE $1`, [`%${memo}%`]);
     }
-
-    await this.client.end();
   }
 
   async fetchExpense(id) {
@@ -131,8 +141,6 @@ class ExpenseData {
   }
 
   async deleteExpense(id) {
-    await this.client.connect();
-
     const expense = await this.fetchExpense(id);
 
     if (expense.rowCount === 1) {
@@ -148,25 +156,17 @@ class ExpenseData {
     } else {
       console.log(`There is no expense with the id '${id}'.`);
     }
-
-    await this.client.end();
   }
 
   async clearExpenses() {
-    await this.client.connect();
-
     await this.client.query(`DELETE FROM expenses`);
     console.log("All expenses have been deleted.");
-
-    await this.client.end();
   }
 }
 
-
-
-let obj = new ExpenseData();
-obj.displayExpensesTotal();
-
-
+// let obj = new ExpenseData();
+// obj.setup_schema();
 
 module.exports = { ExpenseData };
+
+
