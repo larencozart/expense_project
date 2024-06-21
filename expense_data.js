@@ -1,4 +1,5 @@
 const { Client } = require('pg');
+const format = require("pg-format");
 
 function logAndExit(err) {
   console.log(err);
@@ -24,9 +25,16 @@ class ExpenseData {
     });
   }
 
-  async displayTotal() {
+  async calculateTotal() {
     const totalData = await this.client.query(`SELECT SUM(amount) FROM expenses`);
     const total = totalData.rows[0].sum;
+
+    return total;
+  }
+
+  async displayTotal() {
+    // const totalData = await this.client.query(`SELECT SUM(amount) FROM expenses`);
+    const total = await this.calculateTotal();
 
     const longestMemoData = await this.client.query(`SELECT MAX(length(memo)) FROM expenses`);
     const longestMemoLength = longestMemoData.rows[0].max;
@@ -40,8 +48,12 @@ class ExpenseData {
   async listExpenses() {
     await this.client.connect();
   
-    const data = await this.client.query("SELECT * FROM expenses");
-   
+    const listConfig = {
+      text: `SELECT * FROM expenses`
+    }
+
+    const data = await this.client.query(listConfig);
+
     if (data.rowCount < 1) {
       console.log("There are no expenses.");
     } else {
@@ -72,8 +84,8 @@ class ExpenseData {
     await this.client.connect();
 
     const searchConfig = {
-      text: `SELECT * FROM expenses WHERE memo ILIKE $1`,
-      values: [`%${memo}%`]
+      text: `SELECT $1 FROM expenses WHERE memo ILIKE $2`,
+      values: ['*', `%${memo}%`]
     }
 
     const data = await this.client.query(searchConfig);
